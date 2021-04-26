@@ -234,6 +234,8 @@ if __name__ == '__main__': #main function of the program
 	print('start processing...')
 
 	model = get_testing_model()
+	
+	# Caffe model is converted to keras model
 	model.load_weights('./model/keras/model.h5') # orginal weights converted from caffe
 
 	vi=False
