@@ -29,13 +29,18 @@ def process (input_image, params, model_params):
                                                           model_params['padValue'])
 		input_img = np.transpose(np.float32(imageToTest_padded[:,:,:,np.newaxis]), (3,0,1,2)) # required shape (1, width, height, channels)
 		output_blobs = model.predict(input_img)
-		heatmap = np.squeeze(output_blobs[1])  # output 1 is heatmaps
+
+		 # extract outputs, resize, and remove padding
+		 # output 1 is heatmaps
+		heatmap = np.squeeze(output_blobs[1])  
 		heatmap = cv2.resize(heatmap, (0, 0), fx=model_params['stride'], fy=model_params['stride'],
                              interpolation=cv2.INTER_CUBIC)
 		heatmap = heatmap[:imageToTest_padded.shape[0] - pad[2], :imageToTest_padded.shape[1] - pad[3],
                   :]
 		heatmap = cv2.resize(heatmap, (oriImg.shape[1], oriImg.shape[0]), interpolation=cv2.INTER_CUBIC)
-		paf = np.squeeze(output_blobs[0])  # output 0 is PAFs
+		
+		# output 0 is PAFs
+		paf = np.squeeze(output_blobs[0])
 		paf = cv2.resize(paf, (0, 0), fx=model_params['stride'], fy=model_params['stride'],
                          interpolation=cv2.INTER_CUBIC)
 		paf = paf[:imageToTest_padded.shape[0] - pad[2], :imageToTest_padded.shape[1] - pad[3], :]
@@ -48,6 +53,7 @@ def process (input_image, params, model_params):
 	
 	prinfTick(1) #prints time required till now.
 
+	# Visualise all detected body parts
 	for part in range(18):
 	    map_ori = heatmap_avg[:, :, part]
 	    map = gaussian_filter(map_ori, sigma=3)
@@ -95,12 +101,12 @@ def draw(input_image, all_peaks):
 def checkPosition(all_peaks):
     try:
         f = 0
-        if (all_peaks[16]):
-            a = all_peaks[16][0][0:2] #Right Ear
+        if (all_peaks[16]): # Left ear
+            a = all_peaks[16][0][0:2] # Coordinates of left ear
             f = 1
         else:
-            a = all_peaks[17][0][0:2] #Left Ear
-        b = all_peaks[11][0][0:2] # Hip
+            a = all_peaks[17][0][0:2] # Coordinates of Right ear
+        b = all_peaks[11][0][0:2] # Coordinates of Left hip
         angle = calcAngle(a,b)
         degrees = round(math.degrees(angle))
         if (f):
@@ -128,12 +134,12 @@ def calcAngle(a, b):
 
 def checkHandFold(all_peaks):
 	try:
-		if (all_peaks[3][0][0:2]):
+		if (all_peaks[3][0][0:2]): # Right elbow
 			try:
-				if (all_peaks[4][0][0:2]):
-					distance  = calcDistance(all_peaks[3][0][0:2],all_peaks[4][0][0:2]) #distance between right arm-joint and right palm.
-					armdist = calcDistance(all_peaks[2][0][0:2], all_peaks[3][0][0:2]) #distance between left arm-joint and left palm.
-					if (distance < (armdist + 100) and distance > (armdist - 100) ): #this value 100 is arbitary. this shall be replaced with a calculation which can adjust to different sizes of people.
+				if (all_peaks[4][0][0:2]): # Right wrist
+					distance  = calcDistance(all_peaks[3][0][0:2],all_peaks[4][0][0:2]) # distance between Right elbow, Right wrist
+					armdist = calcDistance(all_peaks[2][0][0:2], all_peaks[3][0][0:2]) # distance between left arm-joint and left palm.
+					if (distance < (armdist + 100) and distance > (armdist - 100) ): # this value 100 is arbitary. this shall be replaced with a calculation which can adjust to different sizes of people.
 						print("Not Folding Hands")
 					else: 
 						print("Folding Hands")
@@ -219,7 +225,7 @@ def showimage(img): #sometimes opencv will oversize the image when using using `
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-def prinfTick(i): #Time calculation to keep a trackm of progress
+def prinfTick(i): #Time calculation to keep a track of progress
     toc = time.time()
     print ('processing time%d is %.5f' % (i,toc - tic))        
 
@@ -228,7 +234,7 @@ if __name__ == '__main__': #main function of the program
 	print('start processing...')
 
 	model = get_testing_model()
-	model.load_weights('./model/keras/model.h5')
+	model.load_weights('./model/keras/model.h5') # orginal weights converted from caffe
 
 	vi=False
 	if(vi == False):
